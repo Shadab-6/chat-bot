@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Chatbot</title>
+  <style>
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a24;
+      --surface2: #22222f;
+      --border: #2e2e40;
+      --accent: #7c6dfc;
+      --accent-glow: rgba(124,109,252,0.25);
+      --text: #e8e8f0;
+      --text-muted: #7070a0;
+      --user-bubble: #2d2060;
+      --bot-bubble: #1e1e2e;
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .header .logo {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #7c6dfc, #a78bfa);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin: 0 auto 12px;
+      box-shadow: 0 0 24px var(--accent-glow);
+    }
+
+    .header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .header p {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 720px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      height: 72vh;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .messages::-webkit-scrollbar { width: 5px; }
+    .messages::-webkit-scrollbar-track { background: transparent; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    .message {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      animation: slideIn 0.25s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user { flex-direction: row-reverse; }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .message.bot .avatar  { background: linear-gradient(135deg, #7c6dfc, #a78bfa); }
+    .message.user .avatar { background: var(--surface2); border: 1px solid var(--border); }
+
+    .bubble {
+      max-width: 78%;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-size: 0.92rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .message.bot .bubble {
+      background: var(--bot-bubble);
+      border: 1px solid var(--border);
+      border-top-left-radius: 4px;
+    }
+
+    .message.user .bubble {
+      background: var(--user-bubble);
+      border: 1px solid rgba(124,109,252,0.3);
+      border-top-right-radius: 4px;
+    }
+
+    .thinking {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      padding: 4px 0;
+    }
+
+    .thinking span {
+      width: 7px; height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+
+    .thinking span:nth-child(2) { animation-delay: 0.2s; }
+    .thinking span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%,80%,100% { transform: scale(0.7); opacity: 0.5; }
+      40%          { transform: scale(1);   opacity: 1;   }
+    }
+
+    .input-area {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+      background: var(--surface2);
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    textarea {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 0.92rem;
+      padding: 12px 14px;
+      resize: none;
+      min-height: 48px;
+      max-height: 140px;
+      overflow-y: auto;
+      outline: none;
+      font-family: inherit;
+      line-height: 1.5;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--text-muted); }
+
+    button {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #7c6dfc, #a78bfa);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: opacity 0.2s, transform 0.1s;
+      box-shadow: 0 2px 12px var(--accent-glow);
+    }
+
+    button:hover  { opacity: 0.9; transform: scale(1.05); }
+    button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    button svg { width: 20px; height: 20px; fill: white; }
+
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      gap: 10px;
+      font-size: 0.88rem;
+    }
+
+    .empty-state .icon { font-size: 2.5rem; }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 6px;
+    }
+
+    .pill {
+      padding: 6px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .pill:hover {
+      border-color: var(--accent);
+      background: rgba(124,109,252,0.1);
+    }
+
+    .status-bar {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .status-bar a { color: var(--accent); text-decoration: none; }
+
+    @media (max-width: 480px) {
+      .bubble { max-width: 90%; font-size: 0.88rem; }
+      .chat-container { height: 78vh; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">🤖</div>
+  <h1>AI Assistant</h1>
+  <p>Powered by your local Ollama model via n8n</p>
+</div>
+
+<div class="chat-container">
+  <div class="messages" id="messages">
+    <div class="empty-state" id="emptyState">
+      <div class="icon">✨</div>
+      <div>Ask me anything!</div>
+      <div class="pills">
+        <span class="pill" onclick="useSuggestion(this)">What can you do?</span>
+        <span class="pill" onclick="useSuggestion(this)">Tell me a fun fact</span>
+        <span class="pill" onclick="useSuggestion(this)">Write a short poem</span>
+        <span class="pill" onclick="useSuggestion(this)">Explain AI briefly</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <textarea
+      id="userInput"
+      placeholder="Type your message…"
+      rows="1"
+      onkeydown="handleKey(event)"
+      oninput="autoResize(this)"
+    ></textarea>
+    <button id="sendBtn" onclick="sendMessage()" title="Send">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="status-bar">
+  <!-- ⚠️ Replace the URL below with your actual n8n webhook URL -->
+  Connected to n8n webhook · Model: Mistral 7B via Ollama
+</div>
+
+<script>
+  // ─── CONFIG ────────────────────────────────────────────────────────────────
+  // Replace this with your actual n8n webhook URL after importing the workflow
+  const N8N_WEBHOOK_URL = "http://YOUR_N8N_HOST:5678/webhook/chatbot";
+  // ───────────────────────────────────────────────────────────────────────────
+
+  const messagesEl = document.getElementById("messages");
+  const inputEl    = document.getElementById("userInput");
+  const sendBtn    = document.getElementById("sendBtn");
+  const emptyState = document.getElementById("emptyState");
+
+  function autoResize(el) {
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 140) + "px";
+  }
+
+  function handleKey(e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  function useSuggestion(el) {
+    inputEl.value = el.textContent;
+    autoResize(inputEl);
+    sendMessage();
+  }
+
+  function addMessage(role, text) {
+    if (emptyState) emptyState.style.display = "none";
+
+    const msg = document.createElement("div");
+    msg.className = `message ${role}`;
+
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
+    avatar.textContent = role === "bot" ? "🤖" : "👤";
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text;
+
+    msg.appendChild(avatar);
+    msg.appendChild(bubble);
+    messagesEl.appendChild(msg);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return bubble;
+  }
+
+  function addThinking() {
+    if (emptyState) emptyState.style.display = "none";
+
+    const msg = document.createElement("div");
+    msg.className = "message bot";
+    msg.id = "thinkingMsg";
+
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
+    avatar.textContent = "🤖";
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.innerHTML = `<div class="thinking"><span></span><span></span><span></span></div>`;
+
+    msg.appendChild(avatar);
+    msg.appendChild(bubble);
+    messagesEl.appendChild(msg);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function removeThinking() {
+    const el = document.getElementById("thinkingMsg");
+    if (el) el.remove();
+  }
+
+  async function sendMessage() {
+    const text = inputEl.value.trim();
+    if (!text) return;
+
+    inputEl.value = "";
+    inputEl.style.height = "auto";
+    sendBtn.disabled = true;
+
+    addMessage("user", text);
+    addThinking();
+
+    try {
+      const res = await fetch(N8N_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, timestamp: new Date().toISOString() })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+
+      // n8n responds with { reply: "..." } — adjust if your workflow uses a different key
+      const reply = data.reply || data.response || data.output || data.text
+                    || JSON.stringify(data);
+
+      removeThinking();
+      addMessage("bot", reply);
+
+    } catch (err) {
+      removeThinking();
+      addMessage("bot", `⚠️ Error connecting to the server.\n\nMake sure:\n1. n8n is running\n2. The webhook URL is correct\n3. CORS is allowed\n\nError: ${err.message}`);
+    }
+
+    sendBtn.disabled = false;
+    inputEl.focus();
+  }
+</script>
+</body>
+</html>
